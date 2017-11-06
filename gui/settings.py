@@ -1,4 +1,18 @@
-#Kamailio 
+# dSIPRouter settings
+
+DSIP_PORT=80
+USERNAME='admin'
+PASSWORD='password'
+
+# dSIPRouter internal settings
+
+VERSION=0.2
+DEBUG=0
+
+FLT_CARRIER=8
+FLT_PBX=9
+
+# MySQL settings for kamailio 
 
 KAM_DB_TYPE='mysql'
 KAM_DB_HOST='localhost'
@@ -13,12 +27,5 @@ KAM_DB_PASS='kamailiorw'
 SQLALCHEMY_TRACK_MODIFICATIONS=False
 SQLALCHEMY_SQL_DEBUG=False
 
-FLT_CARRIER=8
-FLT_PBX=9
 
-VERSION=0.2
 
-USERNAME='admin'
-PASSWORD='password'
-
-DEBUG=0
