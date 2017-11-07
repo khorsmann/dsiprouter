@@ -1,6 +1,6 @@
 # force changes of settings - i dont want to push my db-pass
-.gui/settings.py
 .installed
+gui/settings.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
