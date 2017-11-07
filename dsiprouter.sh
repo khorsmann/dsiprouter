@@ -71,7 +71,7 @@ function configureKamailio {
 
 # Install schema for drouting module
 	mysql -u $MYSQL_KAM_USERNAME -p$MYSQL_KAM_PASSWORD -h$MYSQL_KAM_HOST $MYSQL_KAM_DB -e "delete from version where table_name in ('dr_gateways','dr_groups','dr_gw_lists','dr_rules')"
-	mysql -u $MYSQL_KAM_USERNAME -pc$MYSQL_KAM_PASSWORD -h$MYSQL_KAM_HOST $MYSQL_KAM_DB -e "drop table if exists dr_gateways,dr_groups,dr_gw_lists,dr_rules"
+	mysql -u $MYSQL_KAM_USERNAME -p$MYSQL_KAM_PASSWORD -h$MYSQL_KAM_HOST $MYSQL_KAM_DB -e "drop table if exists dr_gateways,dr_groups,dr_gw_lists,dr_rules"
 	if [ -e  /usr/share/kamailio/mysql/drouting-create.sql ]; then
 		mysql -u $MYSQL_KAM_USERNAME -p$MYSQL_KAM_PASSWORD -h$MYSQL_KAM_HOST $MYSQL_KAM_DB < /usr/share/kamailio/mysql/drouting-create.sql
 	else
@@ -283,23 +283,23 @@ function install {
 	if [ ! -f "./.installed" ]; then
 	#Check if Python is installed before trying to start up the process
 
-	#if [ -z ${PYTHON_CMD+x} ]; then
-	#        isPythonInstalled
-	#fi
-		EXTERNAL_IP=`curl -s ip.alt.io`
-		INTERNAL_IP=`hostname -I | awk '{print $1}'`
+	if [ -z ${PYTHON_CMD+x} ]; then
+	        isPythonInstalled
+	fi
+		#EXTERNAL_IP=`curl -s ip.alt.io`
+		#INTERNAL_IP=`hostname -I | awk '{print $1}'`
 		if [ $DISTRO == "centos" ]; then
 			PIP_CMD="pip"
 			yum -y install mysql-devel gcc gcc-devel python34  python34-pip python34-devel
-			firewall-cmd --zone=public --add-port=${DSIP_PORT}/tcp --permanent
-			firewall-cmd --reload
+			#firewall-cmd --zone=public --add-port=${DSIP_PORT}/tcp --permanent
+            #firewall-cmd --reload
 
 		elif [ $DISTRO == "debian" ]; then
 			PIP_CMD="pip3"
 			apt-get -y install build-essential python3 python3-pip python-dev libmysqlclient-dev libmariadb-client-lgpl-dev
 			#Setup Firewall for DSIP_PORT
-			firewall-cmd --zone=public --add-port=${DSIP_PORT}/tcp --permanent
-			firewall-cmd --reload
+			#firewall-cmd --zone=public --add-port=${DSIP_PORT}/tcp --permanent
+			#firewall-cmd --reload
 		fi
 		$PYTHON_CMD -m ${PIP_CMD} install -r ./gui/requirements.txt
 		if [ $? -eq 1 ]; then
