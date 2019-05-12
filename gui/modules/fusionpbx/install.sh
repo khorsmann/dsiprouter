@@ -1,54 +1,129 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#set -x
+ENABLED=1 # ENABLED=1 --> install, ENABLED=0 --> do nothing, ENABLED=-1 uninstall
 
-
-function installSQL {
-
-#Check to see if the acc table or cdr tables are in use
-
-row_count=`mysql -s -N $MYSQL_ROOT_USERNAME $MYSQL_ROOT_PASSWORD $MYSQL_KAM_DBNAME -e "select count(*) from dsip_fusionpbx_db limit 10"`
-if [ "$row_count" -gt 0 ]; then
-	echo -e "The FusionPBX Domain Support (dsip_fusionpbx_db) table in Kamailio has $row_count existing rows.  Please backup this table before moving forward if you want the data."  	
-	echo -e "Would you like to install the FusionPBX Domain Support module now [y/n]:\c"
-	read ANSWER
-	if [ "$ANSWER" == "n" ]; then
-		return
-	fi
-fi
-
-# Replace the FusionPBX Domain Support tables and add some Kamailio stored procedures
-echo "Adding/Replacing the tables needed for FusionPBX Domain Support tables  within dSIPRouter..."
-mysql -s -N $MYSQL_ROOT_USERNAME $MYSQL_ROOT_PASSWORD $MYSQL_KAM_DBNAME < ./fusionpbx.sql
-
-}
+# Import dsip_lib utility / shared functions
+. ${DSIP_PROJECT_DIR}/dsiprouter/dsip_lib.sh
 
 function install {
+    if cmdExists 'apt'; then
+        apt-get install -y \
+            apt-transport-https \
+            ca-certificates \
+            software-properties-common
 
-echo ""
+        curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 
+        add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/${DISTRO} \
+        $(lsb_release -cs) \
+        stable"
+
+        apt-get update -y
+
+        apt-get install -y docker-ce
+        if [ $? == 0 ]; then
+            printdbg "Docker is installed"
+        fi
+
+    elif cmdExists 'yum'; then
+        yum install -y ca-certificates
+#        CA_CERT_DIR=$(dirname $(find / -name '*ca-bundle.crt'))
+#        cp -f ${CA_CERT_DIR}/ca-bundle.crt ${CA_CERT_DIR}/ca-bundle.bak
+#        curl http://curl.haxx.se/ca/cacert.pem -o ${CA_CERT_DIR}/ca-bundle.crt
+#        update-ca-trust force-enable
+#        update-ca-trust extract
+
+        yum install -y yum-utils device-mapper-persistent-data lvm2
+        yum remove -y docker\*
+        yum-config-manager -y --add-repo https://download.docker.com/linux/${DISTRO}/docker-ce.repo
+        yum-config-manager -y --enable docker-ce-stable
+        yum install -y docker-ce
+
+        if [ $? == 0 ]; then
+            echo "Docker is installed"
+        fi
+    fi
+
+    systemctl enable docker.service
+    systemctl start docker
+
+    firewall-cmd --permanent --zone=public --add-port=80/tcp
+    firewall-cmd --permanent --zone=public --add-port=443/tcp
+    firewall-cmd --reload
+
+    # Install Nginx container
+    abspath=$(pwd)/gui/modules/fusionpbx
+    echo "FusionPBX Path: $abspath"
+    docker create nginx
+    #docker run --name docker-nginx -p 80:80  -v ${abspath}/dsiprouter.nginx:/etc/nginx/conf.d/default.conf  -d nginx
+
+    printdbg "FusionPBX module installed"
 }
-
-
 
 function uninstall {
 
-echo ""
+	# Forcefully stop all docker containers and remove them
+	docker ps -a -q > /dev/null
+	if [ $? == 1 ]; then
+		docker rm -f $(docker ps -a -q) > /dev/null
+		printdbg "Stopped and removed all docker containers"
+	else
+		printwarn "No docker containers to remove"
+	fi
 
+    if cmdExists 'apt'; then
+        # Can't remove packages because it removes python3-pip package
+        #apt-get remove -y \
+        #apt-transport-https \
+        #ca-certificates
+        #software-properties-common
+
+        # Remove Docker Engine
+        apt-get remove -y docker-ce
+        if [ $? == 0 ]; then
+            echo "Removed the docker engine"
+        fi
+
+        # Remove docker repository
+        #sed -i 's|https://download\.docker\.com|d|' /etc/apt/sources.list
+        #if [ $? == 0 ]; then
+        #	echo "Removed the docker repository"
+        #fi
+
+        # Stop trusting the docker key
+        key=`apt-key list | grep -B 1 docker | head -n1`
+        apt-key del $key
+
+    elif cmdExists 'yum'; then
+        yum remove -y ca-certificates
+
+        yum remove -y device-mapper-persistent-data lvm2
+        yum remove -y docker-ce
+        if [ $? == 0 ]; then
+            echo "Removed the docker engine"
+        fi
+
+        # Remove the repos
+        rm -f /etc/yum.repos.d/docker-ce*
+        yum clean all
+    fi
+
+    firewall-cmd --permanent --zone=public --remove-port=80/tcp
+    firewall-cmd --permanent --zone=public --remove-port=443/tcp
+    firewall-cmd --reload
+
+    printdbg "FusionPBX module uninstalled"
 }
 
-# This installer will be kicked off by the main dSIPRouter installer by passing the MySQL DB root username, database name, and/or the root password
-# This is needed since we are installing stored procedures which require SUPER privileges on MySQL
+function main {
+    if [[ ${ENABLED} -eq 1 ]]; then
+        install
+    elif [[ ${ENABLED} -eq -1 ]]; then
+        uninstall
+    else
+        exit 0
+    fi
+}
 
-if [ $# -gt 2 ]; then
-
-	MYSQL_ROOT_USERNAME="-u$1"
-	MYSQL_ROOT_PASSWORD="-p$2"
-	MYSQL_KAM_DBNAME=$3
-else
-
-	MYSQL_ROOT_USERNAME="-u$1"
-        MYSQL_ROOT_PASSWORD=
-        MYSQL_KAM_DBNAME=$2
-fi
-
-
-installSQL
+main

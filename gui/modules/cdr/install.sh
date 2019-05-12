@@ -1,54 +1,47 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#set -x
+ENABLED=1 # ENABLED=1 --> install, ENABLED=0 --> do nothing, ENABLED=-1 uninstall
 
+# Import dsip_lib utility / shared functions
+. ${DSIP_PROJECT_DIR}/dsiprouter/dsip_lib.sh
 
 function installSQL {
+    # Check to see if the acc table or cdr tables are in use
+    MERGE_DATA=0
+    acc_row_count=$(mysql -s -N --user="$MYSQL_ROOT_USERNAME" --password="$MYSQL_ROOT_PASSWORD" $MYSQL_KAM_DATABASE -e "select count(*) from acc limit 10")
+    if [ ${acc_row_count:-0} -gt 0 ]; then
+        MERGE_DATA=1
+    fi
 
-#Check to see if the acc table or cdr tables are in use
+    # Replace the CDR tables and add some Kamailio stored procedures
+    printwarn "Adding/Replacing the tables needed for CDR's within dSIPRouter..."
+    mysql -s -N --user="$MYSQL_ROOT_USERNAME" --password="$MYSQL_ROOT_PASSWORD" $MYSQL_KAM_DATABASE < ./gui/modules/cdr/cdrs.sql
 
-acc_row_count=`mysql -s -N $MYSQL_ROOT_USERNAME $MYSQL_ROOT_PASSWORD $MYSQL_KAM_DBNAME -e "select count(*) from acc limit 10"`
-if [ "$acc_row_count" -gt 0 ]; then
-	echo -e "The accounting table (acc) in Kamailio has $acc_row_count existing rows.  Please backup this table before moving forward if you want the data.\nIt will be deleted and recreated with additionals fields needed to support CDR's within dSIPRouter."  	
-	echo -e "Would you like to install the CDR module now [y/n]:\c"
-	read ANSWER
-	if [ "$ANSWER" == "n" ]; then
-		return
-	fi
-fi
-
-# Replace the CDR tables and add some Kamailio stored procedures
-echo "Adding/Replacing the tables needed for CDR's within dSIPRouter..."
-mysql -s -N $MYSQL_ROOT_USERNAME $MYSQL_ROOT_PASSWORD $MYSQL_KAM_DBNAME < ./cdrs.sql
-
+    if [ ${MERGE_DATA} -eq 0 ]; then
+        printwarn "The accounting table (acc) in Kamailio already exists. Merging table data"
+        mysqldump --single-transaction --skip-triggers --skip-add-drop-table --no-create-info --insert-ignore \
+            --user="$MYSQL_ROOT_USERNAME" --password="$MYSQL_ROOT_PASSWORD" ${MYSQL_KAM_DATABASE} dsip_lcr \
+            | mysql --user="$MYSQL_ROOT_USERNAME" --password="$MYSQL_ROOT_PASSWORD" $MYSQL_KAM_DATABASE
+    fi
 }
 
 function install {
-
-echo ""
-
+    installSQL
+    printdbg "CDR module installed"
 }
-
-
 
 function uninstall {
-
-echo ""
-
+    printdbg "CDR module uninstalled"
 }
 
-# This installer will be kicked off by the main dSIPRouter installer by passing the MySQL DB root username, database name, and/or the root password
-# This is needed since we are installing stored procedures which require SUPER privileges on MySQL
+function main {
+    if [[ ${ENABLED} -eq 1 ]]; then
+        install
+    elif [[ ${ENABLED} -eq -1 ]]; then
+        uninstall
+    else
+        exit 0
+    fi
+}
 
-if [ $# -gt 2 ]; then
-
-	MYSQL_ROOT_USERNAME="-u$1"
-	MYSQL_ROOT_PASSWORD="-p$2"
-	MYSQL_KAM_DBNAME=$3
-else
-
-	MYSQL_ROOT_USERNAME="-u$1"
-        MYSQL_ROOT_PASSWORD=
-        MYSQL_KAM_DBNAME=$2
-fi
-
-
-installSQL
+main

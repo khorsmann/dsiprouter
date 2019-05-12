@@ -1,7 +1,11 @@
-flask-restplus
-Flask-SQLAlchemy==2.1
-flask_cors
-requests
-jinja2
-Flask-Script
+Flask
+Flask_Script
 mysqlclient
+psycopg2
+psycopg2_binary
+PyMySQL
+pyspark
+requests
+SQLAlchemy
+Werkzeug
+docker

@@ -1,67 +1,42 @@
-## dSIPRouter by dOpenSource | a Flyball Company
-##### [ Built in Detroit ]
+What is dSIPRouter?
+===================
 
+dSIPRouter allows you to quickly turn [Kamailio](https://www.kamailio.org/) into an easy to use SIP Service Provider platform, which enables two basic use cases:
 
-Allows you to quickly turn [Kamailio](https://www.kamailio.org/) into a easy to to use SIP trunking service that allow you to manage your carriers and PBX's from a web gui
+- **SIP Trunking services:** Provide services to customers that have an on-premise PBX such as FreePBX, FusionPBX, Avaya, etc.  We have support for IP and credential based authentication.
 
-### Supported Platforms:
+- **Hosted PBX services:** Proxy SIP Endpoint requests to a multi-tenant PBX such as FusionPBX or single-tenant such as FreePBX. We have an integration with FusionPBX that make this really easy and scalable!
 
-- CentOS 7 (tested on 7.3.1611)
-- Debian Jessie (tested on 8.9)
-- Kamailio 4.x (tested on Kamailio 4.4.5, 4.4.6)
+**Follow us at [#dsiprouter](https://twitter.com/dsiprouter) on Twitter to get the latest updates on dSIPRouter**
 
-### Prerequisites:
+### Project Web Site
 
-- Must run this as the root user (you can use sudo)
-- Kamailio needs to be installed with the default kamailio configurtion directory, which is /etc/kamailio on CentOS 7
-- The Kamailio database must be mysql and the root user must be able to access the tables without a password.  You can add a password to the root database user after the installation.   
+http://dsiprouter.org
 
-### Installing and Running It:
+### Demo System
 
-The install command will install dSIPRouter. 
+You can checkout our demo system, which is located here:
 
-./dsiprouter.sh install
+[http://demo.dsiprouter.org:5000](http://demo.dsiprouter.org:5000)
 
+username: admin
 
-If you need to proxy RTP traffic then add the -rtpengine parameter.  So, the command to install dSIPRouter and the RTPEngine would be
+password: ZmIwMTdmY2I5NjE4
 
-./dsiprouter.sh install -rtpengine
+### Documentation
 
-Once the install is complete, dSIPRouter will automatically start the Web GUI and the RTPEngine.  
+You can find our documentation here: [dSIPRouter Documentation](https://dsiprouter.readthedocs.io/en/latest)
 
-Open a broswer and go to http://[ip address of your server]:5000
+### Support
 
-The default username/password is admin/password.  
+Free Support: [dSIPRouter Question & Answer Forum](https://groups.google.com/forum/#!forum/dsiprouter)
 
-The first time it's executed it will attempt to install everything and create a hidden file called ./.installed.  You can remove that file if you want to force a reinstall
+Paid Support: [dSIPRouter Support](http://dsiprouter.org/#fh5co-support-section)
 
-### Stopping dSIPRouter:
+### Training
 
-./dsiprouter.sh stop
+Details on training can be found [here](https://dopensource.com/product/dsiprouter-admin-course/)
 
-### Run At Startup:
+### License
 
-Put this line in /etc/rc.local
-
-<your directory>/dsiprouter.sh start
-
-* We will provide a systemctl startup/stop script in the near future
-
-### Changing Admin Password
-
-vi ./gui/settings
-change the PASSWORD field to reflect the password you want
-
-### Screenshots
-
-#### Carrier Management Screen
-![dSIPRouter Carrier Screen](/docs/images/dsiprouter-carriers.jpg)
-
-#### PBX(s) and Endpoint Management Screen
-![dSIPRouter PBX Screen](/docs/images/dsiprouter-pbxs.jpg)
-
-#### Inbound Mapping Screen
-![dSIPRouter Inbound Mapping Screen](/docs/images/dsiprouter-inboundmapping.jpg)
-
-#### Outbound Routing Screen
-![dSIPRouter Outbound Routing Screen](/docs/images/dsiprouter-outboundrouting.jpg)
+* Apache License 2.0, [read more here](./LICENSE)
